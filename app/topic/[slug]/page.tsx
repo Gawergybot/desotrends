@@ -1,0 +1,46 @@
+"use client";
+
+import Link from "next/link";
+import { RightRail } from "@/components/right-rail";
+import { Sidebar } from "@/components/sidebar";
+import { TopBar } from "@/components/topbar";
+import { TopicTabs } from "@/components/topic-tabs";
+import { useTopicPosts, useTrendingTopics } from "@/hooks/useTrending";
+import { formatRelativeHours } from "@/lib/text";
+
+export default function TopicPage({ params }: { params: { slug: string } }) {
+  const trending = useTrendingTopics();
+  const topic = trending.topics.find((t) => t.slug === params.slug);
+  const topicPosts = useTopicPosts(topic?.postHashes);
+
+  const latestPosts = (topicPosts.data ?? []).sort((a, b) => b.TimestampNanos - a.TimestampNanos);
+  const topPosts = latestPosts.filter((post) => topic?.topPostHashes.includes(post.PostHashHex));
+
+  return (
+    <main className="mx-auto flex min-h-screen w-full max-w-[1400px] gap-4 px-2 md:px-4">
+      <Sidebar />
+      <section className="min-w-0 flex-1">
+        <TopBar />
+        {trending.isLoading && <div className="card p-4 text-sm text-muted">Loading topic…</div>}
+        {!trending.isLoading && !topic ? (
+          <div className="card p-4">
+            <Link href="/" className="text-sm text-accent">← Back</Link>
+            <p className="mt-3 text-sm text-muted">Topic not found in the current canonical trend window.</p>
+          </div>
+        ) : topic ? (
+          <article className="card p-4">
+            <Link href="/" className="text-sm text-accent">← Back</Link>
+            <h1 className="mt-3 text-2xl font-bold">{topic.title}</h1>
+            <p className="mt-1 text-sm text-muted">Last updated {formatRelativeHours(topic.updatedAtNanos)}</p>
+            <div className="mt-4 whitespace-pre-line text-sm text-slate-100">{topic.summary}</div>
+            <p className="mt-3 text-xs text-muted">This story is a summary of posts on DeSo and may evolve over time.</p>
+            <div className="mt-6">
+              <TopicTabs topPosts={topPosts} latestPosts={latestPosts} />
+            </div>
+          </article>
+        ) : null}
+      </section>
+      <RightRail />
+    </main>
+  );
+}
