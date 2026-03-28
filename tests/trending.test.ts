@@ -3,11 +3,13 @@ import { buildTrendingTopics, findTopicBySlug } from "@/lib/trending";
 const baseNanos = Date.now() * 1e6;
 
 const posts = [
-  { PostHashHex: "a", Body: "#focus DeSo creator rewards discussion", TimestampNanos: baseNanos, PosterPublicKeyBase58Check: "pk1" },
-  { PostHashHex: "b", Body: "#focus creator rewards are changing", TimestampNanos: baseNanos - 1e9, PosterPublicKeyBase58Check: "pk2" },
-  { PostHashHex: "c", Body: "#focus creator rewards are changing", TimestampNanos: baseNanos - 2e9, PosterPublicKeyBase58Check: "pk2" },
-  { PostHashHex: "d", Body: "$DESO market update and adoption", TimestampNanos: baseNanos - 3e9, PosterPublicKeyBase58Check: "pk3" },
-  { PostHashHex: "e", Body: "$DESO market update and adoption", TimestampNanos: baseNanos - 4e9, PosterPublicKeyBase58Check: "pk4" },
+  { PostHashHex: "a", Body: "#openfund builders are comparing grant updates today", TimestampNanos: baseNanos, PosterPublicKeyBase58Check: "pk1" },
+  { PostHashHex: "b", Body: "#openfund community is discussing new application criteria", TimestampNanos: baseNanos - 1e9, PosterPublicKeyBase58Check: "pk2" },
+  { PostHashHex: "c", Body: "#openfund contributors want more transparent funding milestones", TimestampNanos: baseNanos - 2e9, PosterPublicKeyBase58Check: "pk3" },
+  { PostHashHex: "d", Body: "#openfund creators are sharing project outcomes", TimestampNanos: baseNanos - 3e9, PosterPublicKeyBase58Check: "pk4" },
+  { PostHashHex: "e", Body: "mint now join now season 1 rewards at nftz.me", TimestampNanos: baseNanos - 1e9, PosterPublicKeyBase58Check: "spam1" },
+  { PostHashHex: "f", Body: "mint now join now season 1 rewards at nftz.me", TimestampNanos: baseNanos - 2e9, PosterPublicKeyBase58Check: "spam2" },
+  { PostHashHex: "g", Body: "mint now join now season 1 rewards at nftz.me", TimestampNanos: baseNanos - 3e9, PosterPublicKeyBase58Check: "spam3" },
 ];
 
 test("clusters topics deterministically", () => {
@@ -16,12 +18,10 @@ test("clusters topics deterministically", () => {
   expect(first.map((t) => t.slug)).toEqual(second.map((t) => t.slug));
 });
 
-test("duplicate spam is penalized", () => {
+test("promotional spam is filtered out", () => {
   const topics = buildTrendingTopics(posts as never, 5);
-  const focus = topics.find((t) => t.slug.includes("focus"));
-  const deso = topics.find((t) => t.slug.includes("$deso"));
-  expect(focus && deso).toBeTruthy();
-  expect((focus?.score ?? 0) < (deso?.score ?? 1000)).toBe(true);
+  expect(topics.some((t) => t.summary.toLowerCase().includes("nftz.me"))).toBe(false);
+  expect(topics.some((t) => t.slug.includes("openfund"))).toBe(true);
 });
 
 test("summary generation is deterministic", () => {
@@ -29,6 +29,7 @@ test("summary generation is deterministic", () => {
   const firstSummary = topics[0]?.summary;
   const secondSummary = buildTrendingTopics(posts as never, 5)[0]?.summary;
   expect(firstSummary).toEqual(secondSummary);
+  expect(firstSummary?.startsWith("DeSo users are discussing")).toBe(true);
 });
 
 test("topic detail resolves from canonical topic list", () => {

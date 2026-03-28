@@ -23,10 +23,35 @@ export async function getGlobalFeed(numToFetch = 40): Promise<DeSoPost[]> {
   return data.HotFeedPage ?? [];
 }
 
+export async function fetchHotFeedPage(seenPosts: string[], limit = 100): Promise<DeSoPost[]> {
+  const data = await postJson<{ HotFeedPage: DeSoPost[] }>("get-hot-feed", {
+    ReaderPublicKeyBase58Check: "",
+    SeenPosts: seenPosts,
+    ResponseLimit: limit,
+  });
+
+  return data.HotFeedPage ?? [];
+}
+
 export async function getTrendingPostPool(): Promise<DeSoPost[]> {
-  const first = await getGlobalFeed(120);
-  const uniq = new Map(first.map((post) => [post.PostHashHex, post]));
-  return [...uniq.values()];
+  const seenPosts: string[] = [];
+  const unique = new Map<string, DeSoPost>();
+
+  for (let page = 0; page < 4 && unique.size < 400; page += 1) {
+    const posts = await fetchHotFeedPage(seenPosts, 100);
+    if (!posts.length) break;
+
+    for (const post of posts) {
+      if (!post?.PostHashHex) continue;
+      seenPosts.push(post.PostHashHex);
+      if (!unique.has(post.PostHashHex)) {
+        unique.set(post.PostHashHex, post);
+        if (unique.size >= 400) break;
+      }
+    }
+  }
+
+  return [...unique.values()];
 }
 
 export async function getPostsByHashes(postHashes: string[]): Promise<DeSoPost[]> {

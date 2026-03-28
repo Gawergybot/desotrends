@@ -11,11 +11,11 @@ export default function HomePage() {
   const feed = useFeed();
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-[1400px] gap-4 px-2 md:px-4">
+    <main className="mx-auto flex min-h-screen w-full max-w-[1600px]">
       <Sidebar />
-      <section className="min-w-0 flex-1">
+      <section className="min-w-0 flex-1 border-l border-r border-border xl:max-w-[760px]">
         <TopBar />
-        <div className="card overflow-hidden">
+        <div className="overflow-hidden">
           <Composer />
           {feed.isLoading && <p className="p-4 text-sm text-muted">Loading feed…</p>}
           {feed.isError && <p className="p-4 text-sm text-red-300">Failed to load feed.</p>}
