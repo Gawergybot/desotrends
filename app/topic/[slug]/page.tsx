@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { use } from "react";
 import { RightRail } from "@/components/right-rail";
 import { Sidebar } from "@/components/sidebar";
 import { TopBar } from "@/components/topbar";
@@ -8,9 +9,10 @@ import { TopicTabs } from "@/components/topic-tabs";
 import { useTopicPosts, useTrendingTopics } from "@/hooks/useTrending";
 import { formatRelativeHours } from "@/lib/text";
 
-export default function TopicPage({ params }: { params: { slug: string } }) {
+export default function TopicPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = use(params);
   const trending = useTrendingTopics();
-  const topic = trending.topics.find((t) => t.slug === params.slug);
+  const topic = trending.topics.find((t) => t.slug === slug);
   const topicPosts = useTopicPosts(topic?.postHashes);
 
   const latestPosts = (topicPosts.data ?? []).sort((a, b) => b.TimestampNanos - a.TimestampNanos);

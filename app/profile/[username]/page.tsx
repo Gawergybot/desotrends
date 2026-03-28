@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { use } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { PostCard } from "@/components/post-card";
 import { RightRail } from "@/components/right-rail";
@@ -9,10 +10,11 @@ import { TopBar } from "@/components/topbar";
 import { useAuth } from "@/hooks/useAuth";
 import { getPostsForPublicKey, getProfile, getProfileByPublicKey } from "@/lib/deso";
 
-export default function ProfilePage({ params }: { params: { username: string } }) {
+export default function ProfilePage({ params }: { params: Promise<{ username: string }> }) {
+  const { username } = use(params);
   const { user } = useAuth();
-  const isMeAlias = params.username.toLowerCase() === "me";
-  const resolvedUsername = isMeAlias ? user?.username : params.username;
+  const isMeAlias = username.toLowerCase() === "me";
+  const resolvedUsername = isMeAlias ? user?.username : username;
 
   const profile = useQuery({
     queryKey: ["profile", resolvedUsername, user?.publicKey],
@@ -43,7 +45,7 @@ export default function ProfilePage({ params }: { params: { username: string } }
           {profile.isLoading && <p className="mt-4 text-sm text-muted">Loading profile…</p>}
           {profile.data?.Profile && (
             <header className="mt-4 border-b border-border pb-4">
-              <h1 className="text-2xl font-semibold">@{profile.data.Profile.Username || params.username}</h1>
+              <h1 className="text-2xl font-semibold">@{profile.data.Profile.Username || username}</h1>
               <p className="mt-2 text-sm text-muted">{profile.data.Profile.Description || "No bio available."}</p>
             </header>
           )}
