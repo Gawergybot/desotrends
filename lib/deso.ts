@@ -8,9 +8,11 @@ async function postJson<T>(path: string, body: object): Promise<T> {
     body: JSON.stringify(body),
     cache: "no-store",
   });
+
   if (!response.ok) {
     throw new Error(`DeSo request failed: ${response.status}`);
   }
+
   return response.json() as Promise<T>;
 }
 
@@ -66,15 +68,21 @@ export async function getPostsByHashes(postHashes: string[]): Promise<DeSoPost[]
 }
 
 export async function getProfile(username: string) {
-  return postJson<{ Profile: { Username?: string; Description?: string; PublicKeyBase58Check: string } }>("get-single-profile", {
-    Username: username,
-  });
+  return postJson<{ Profile: { Username?: string; Description?: string; PublicKeyBase58Check: string } }>(
+    "get-single-profile",
+    {
+      Username: username,
+    },
+  );
 }
 
 export async function getProfileByPublicKey(publicKey: string) {
-  return postJson<{ Profile: { Username?: string; Description?: string; PublicKeyBase58Check: string } | null }>("get-single-profile", {
-    PublicKeyBase58Check: publicKey,
-  });
+  return postJson<{ Profile: { Username?: string; Description?: string; PublicKeyBase58Check: string } | null }>(
+    "get-single-profile",
+    {
+      PublicKeyBase58Check: publicKey,
+    },
+  );
 }
 
 export function profilePicUrl(publicKey: string) {
@@ -83,13 +91,22 @@ export function profilePicUrl(publicKey: string) {
 }
 
 export async function resolveAuthUser(publicKey: string): Promise<AuthUser> {
-  const profile = await getProfileByPublicKey(publicKey);
-  return {
+  const fallback: AuthUser = {
     publicKey,
-    username: profile.Profile?.Username,
-    bio: profile.Profile?.Description,
     profilePic: profilePicUrl(publicKey),
   };
+
+  try {
+    const profile = await getProfileByPublicKey(publicKey);
+    return {
+      publicKey,
+      username: profile.Profile?.Username,
+      bio: profile.Profile?.Description,
+      profilePic: profilePicUrl(publicKey),
+    };
+  } catch {
+    return fallback;
+  }
 }
 
 export async function getPostsForPublicKey(publicKey: string): Promise<DeSoPost[]> {

@@ -1,10 +1,14 @@
-import { Diamond, Heart, MessageCircle, Repeat2, Share2 } from "lucide-react";
+import { Diamond, Heart, MessageCircle, Repeat2, Share2 } from "@/components/icons";
 import Link from "next/link";
+import { VerifiedBadge } from "@/components/verified-badge";
 import { formatRelativeHours } from "@/lib/text";
+import { isCoreUsername } from "@/lib/core-accounts";
 import { DeSoPost } from "@/lib/types";
 
 export function PostCard({ post }: { post: DeSoPost }) {
-  const username = post.ProfileEntryResponse?.Username || `${post.PosterPublicKeyBase58Check.slice(0, 8)}...`;
+  const profileUsername = post.ProfileEntryResponse?.Username;
+  const username = profileUsername || `${post.PosterPublicKeyBase58Check.slice(0, 8)}...`;
+  const showVerified = isCoreUsername(profileUsername);
 
   return (
     <article className="border-b border-border px-5 py-4">
@@ -15,6 +19,7 @@ export function PostCard({ post }: { post: DeSoPost }) {
             <Link href={`/profile/${username}`} className="font-semibold hover:underline">
               @{username}
             </Link>
+            {showVerified ? <VerifiedBadge size={16} className="mt-[1px]" /> : null}
             <span className="text-muted">·</span>
             <span className="text-xs text-muted">{formatRelativeHours(post.TimestampNanos)}</span>
           </div>

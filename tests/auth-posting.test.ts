@@ -75,3 +75,23 @@ test("signTransaction surfaces identity signing failure", async () => {
 
   await expect(signTransaction("unsigned-hex")).rejects.toThrow("user cancelled");
 });
+
+test("resolveAuthUser falls back to public key identity when profile lookup fails", async () => {
+  const fetchMock = vi.fn().mockResolvedValue({
+    ok: false,
+    status: 500,
+    json: async () => ({}),
+  });
+
+  vi.stubGlobal("fetch", fetchMock);
+
+  const { resolveAuthUser } = await import("@/lib/deso");
+
+  const user = await resolveAuthUser("BC1YLfallbackUser");
+
+  expect(user.publicKey).toBe("BC1YLfallbackUser");
+  expect(user.username).toBeUndefined();
+  expect(user.profilePic).toContain("BC1YLfallbackUser");
+
+  vi.unstubAllGlobals();
+});
