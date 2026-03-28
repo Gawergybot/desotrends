@@ -11,10 +11,27 @@ import {
   User,
   Wallet,
   WalletCards,
+  type LucideIcon,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 
-const nav = [
+type StaticNavItem = {
+  label: string;
+  href: string;
+  icon: LucideIcon;
+  external?: boolean;
+};
+
+type DynamicNavItem = {
+  label: string;
+  dynamic: true;
+  icon: LucideIcon;
+  external?: false;
+};
+
+type NavItem = StaticNavItem | DynamicNavItem;
+
+const nav: NavItem[] = [
   { label: "Home", href: "/", icon: Home },
   { label: "Notifications", href: "#", icon: Bell },
   { label: "Discover", href: "#", icon: Compass },
@@ -23,7 +40,7 @@ const nav = [
   { label: "My Profile", dynamic: true, icon: User },
   { label: "My Wallet", href: "#", icon: Wallet },
   { label: "More", href: "#", icon: MoreHorizontal },
-] as const;
+];
 
 export function Sidebar() {
   const { myProfileHref } = useAuth();
@@ -37,7 +54,8 @@ export function Sidebar() {
 
       <nav className="space-y-1">
         {nav.map((item) => {
-          const href = item.dynamic ? myProfileHref : item.href;
+          const isDynamic = "dynamic" in item && item.dynamic;
+          const href = isDynamic ? myProfileHref : item.href;
           const Icon = item.icon;
           const className =
             "flex h-[52px] items-center gap-3 rounded-xl px-3 text-[17px] text-slate-100 transition hover:bg-slate-900";
