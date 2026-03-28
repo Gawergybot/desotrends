@@ -30,7 +30,7 @@ Open `http://localhost:3000`.
 - **Reusable UI components**: sidebar, topbar, composer, post cards, right rail, topic tabs.
 - **Client data layer** using TanStack Query for feed/profile fetches and posting mutation.
 - **DeSo API client** in `lib/deso.ts` for node interactions.
-- **Identity helpers** in `lib/identity.ts` use the `deso-protocol` SDK (`configure`, `identity.login`, `identity.signTx`, `identity.submitTx`) with `https://identity.deso.org`.
+- **Identity helpers** in `lib/identity.ts` use the `deso-protocol` SDK (`configure`, `identity.snapshot`, `identity.login`, `identity.logout`, `identity.signTx`, `identity.submitTx`) with `https://identity.deso.org`.
 
 ## Login flow (MVP)
 
@@ -41,13 +41,13 @@ Open `http://localhost:3000`.
 
 ## Trending system (deterministic, no AI APIs)
 
-- Pulls one shared canonical recent public post pool (`useTrendingTopics`) used across home, profile, and topic pages.
+- Pulls one shared canonical recent public post pool (`useTrendingTopics`) used across home, profile, and topic pages from paged `get-hot-feed` requests (up to 4 pages / 400 unique posts).
 - Uses a 24-hour analysis window.
 - Cleans text (strip URLs, normalize punctuation/whitespace, remove stopwords).
 - Extracts topic signals (hashtags/cashtags + dominant phrases).
 - Clusters posts by key tokens.
 - Applies ranking:
-  - `score = uniqueAuthors*5 + postCount*2 + velocityBonus - spamPenalty - duplicatePenalty`
+  - `score = uniqueAuthors*8 + postCount*2 + velocityBonus - spamPenalty - duplicatePenalty - promoPenalty`
 - Generates deterministic title/category/summary from representative posts.
 - Topic detail supports **Top** and **Latest** tabs over actual clustered DeSo posts.
 

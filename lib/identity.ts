@@ -7,7 +7,20 @@ function getNodeURI() {
   return DESO_NODE_URL.replace(/\/api\/v0\/?$/, "");
 }
 
-function ensureConfigured() {
+function getIdentityState() {
+  return (identity as unknown as { getState?: () => { currentUser?: { publicKey?: string } } }).getState?.();
+}
+
+function keyFromSnapshot(snapshot: unknown): string | null {
+  const result = snapshot as { currentUser?: { publicKey?: string }; publicKey?: string };
+  if (typeof result?.publicKey === "string") return result.publicKey;
+  if (typeof result?.currentUser?.publicKey === "string") return result.currentUser.publicKey;
+
+  const stateKey = getIdentityState()?.currentUser?.publicKey;
+  return typeof stateKey === "string" ? stateKey : null;
+}
+
+function configureIdentity() {
   if (configured) return;
 
   configure({
@@ -23,26 +36,29 @@ function ensureConfigured() {
   configured = true;
 }
 
-function extractPublicKey(loginResult: unknown): string | null {
-  const result = loginResult as {
-    publicKey?: string;
-    currentUser?: { publicKey?: string };
-  };
+export async function initIdentity() {
+  const firstConfigure = !configured;
+  configureIdentity();
 
-  if (typeof result?.publicKey === "string") return result.publicKey;
-  if (typeof result?.currentUser?.publicKey === "string") return result.currentUser.publicKey;
+  if (firstConfigure) {
+    await identity.snapshot();
+  }
+}
 
-  const state = (identity as unknown as { getState?: () => { currentUser?: { publicKey?: string } } }).getState?.();
-  const stateKey = state?.currentUser?.publicKey;
-
-  return typeof stateKey === "string" ? stateKey : null;
+export async function getCurrentIdentityPublicKey(): Promise<string | null> {
+  await initIdentity();
+  const snapshot = await identity.snapshot();
+  return keyFromSnapshot(snapshot);
 }
 
 export async function launchLogin(): Promise<string> {
-  ensureConfigured();
+  await initIdentity();
 
-  const loginResult = await identity.login();
-  const publicKey = extractPublicKey(loginResult);
+  const loginResult = await identity.login({ getFreeDeso: true, derivedKeyLogin: true });
+  const snapshot = await identity.snapshot();
+
+  const result = loginResult as { publicKey?: string; currentUser?: { publicKey?: string } };
+  const publicKey = result.publicKey || result.currentUser?.publicKey || keyFromSnapshot(snapshot);
 
   if (!publicKey) {
     throw new Error("Unable to resolve DeSo public key from identity login result");
@@ -51,8 +67,13 @@ export async function launchLogin(): Promise<string> {
   return publicKey;
 }
 
+export async function logoutIdentity(): Promise<void> {
+  await initIdentity();
+  await identity.logout();
+}
+
 export async function signTransaction(transactionHex: string): Promise<string> {
-  ensureConfigured();
+  await initIdentity();
 
   const signedResult = (await identity.signTx(transactionHex)) as string | { signedTransactionHex?: string; txHex?: string };
   if (typeof signedResult === "string") return signedResult;
@@ -64,7 +85,7 @@ export async function signTransaction(transactionHex: string): Promise<string> {
 }
 
 export async function submitSignedTransaction(transactionHex: string): Promise<{ TxnHashHex: string }> {
-  ensureConfigured();
+  await initIdentity();
   const submitResult = (await identity.submitTx(transactionHex)) as string | { TxnHashHex?: string; txnHashHex?: string };
   if (typeof submitResult === "string") return { TxnHashHex: submitResult };
 

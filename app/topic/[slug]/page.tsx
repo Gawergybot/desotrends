@@ -19,19 +19,23 @@ export default function TopicPage({ params }: { params: Promise<{ slug: string }
   const topPosts = latestPosts.filter((post) => topic?.topPostHashes.includes(post.PostHashHex));
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-[1400px] gap-4 px-2 md:px-4">
+    <main className="mx-auto flex min-h-screen w-full max-w-[1600px]">
       <Sidebar />
-      <section className="min-w-0 flex-1">
+      <section className="min-w-0 flex-1 border-l border-r border-border xl:max-w-[760px]">
         <TopBar />
-        {trending.isLoading && <div className="card p-4 text-sm text-muted">Loading topic…</div>}
+        {trending.isLoading && <div className="p-4 text-sm text-muted">Loading topic…</div>}
         {!trending.isLoading && !topic ? (
-          <div className="card p-4">
-            <Link href="/" className="text-sm text-accent">← Back</Link>
+          <div className="px-5 py-4">
+            <Link href="/" className="text-sm text-accent">
+              ← Back
+            </Link>
             <p className="mt-3 text-sm text-muted">Topic not found in the current canonical trend window.</p>
           </div>
         ) : topic ? (
-          <article className="card p-4">
-            <Link href="/" className="text-sm text-accent">← Back</Link>
+          <article className="px-5 py-4">
+            <Link href="/" className="text-sm text-accent">
+              ← Back
+            </Link>
             <h1 className="mt-3 text-2xl font-bold">{topic.title}</h1>
             <p className="mt-1 text-sm text-muted">Last updated {formatRelativeHours(topic.updatedAtNanos)}</p>
             <div className="mt-4 whitespace-pre-line text-sm text-slate-100">{topic.summary}</div>

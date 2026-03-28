@@ -35,22 +35,26 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
   });
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-[1400px] gap-4 px-2 md:px-4">
+    <main className="mx-auto flex min-h-screen w-full max-w-[1600px]">
       <Sidebar />
-      <section className="min-w-0 flex-1">
+      <section className="min-w-0 flex-1 border-l border-r border-border xl:max-w-[760px]">
         <TopBar />
-        <article className="card p-4">
-          <Link href="/" className="text-sm text-accent">← Back</Link>
-          {isMeAlias && !user && <p className="mt-4 text-sm text-muted">Sign in with DeSo to view your profile.</p>}
-          {profile.isLoading && <p className="mt-4 text-sm text-muted">Loading profile…</p>}
-          {profile.data?.Profile && (
-            <header className="mt-4 border-b border-border pb-4">
-              <h1 className="text-2xl font-semibold">@{profile.data.Profile.Username || username}</h1>
-              <p className="mt-2 text-sm text-muted">{profile.data.Profile.Description || "No bio available."}</p>
-            </header>
-          )}
-          {profile.isError && <p className="mt-4 text-sm text-red-300">Failed to load profile.</p>}
-          <section className="mt-4 rounded-xl border border-border">
+        <article>
+          <div className="px-5 py-4">
+            <Link href="/" className="text-sm text-accent">
+              ← Back
+            </Link>
+            {isMeAlias && !user && <p className="mt-4 text-sm text-muted">Sign in with DeSo to view your profile.</p>}
+            {profile.isLoading && <p className="mt-4 text-sm text-muted">Loading profile…</p>}
+            {profile.data?.Profile && (
+              <header className="mt-4 border-b border-border pb-4">
+                <h1 className="text-2xl font-semibold">@{profile.data.Profile.Username || username}</h1>
+                <p className="mt-2 text-sm text-muted">{profile.data.Profile.Description || "No bio available."}</p>
+              </header>
+            )}
+            {profile.isError && <p className="mt-4 text-sm text-red-300">Failed to load profile.</p>}
+          </div>
+          <section>
             {posts.data?.map((post) => <PostCard key={post.PostHashHex} post={post} />)}
             {posts.isLoading && <p className="p-4 text-sm text-muted">Loading posts…</p>}
             {posts.isError && <p className="p-4 text-sm text-red-300">Failed to load posts.</p>}
