@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   Bell,
   Compass,
@@ -12,7 +13,7 @@ import {
   Wallet,
   WalletCards,
   type LucideIcon,
-} from "lucide-react";
+} from "@/components/icons";
 import { useAuth } from "@/hooks/useAuth";
 
 type StaticNavItem = {
@@ -33,16 +34,22 @@ type NavItem = StaticNavItem | DynamicNavItem;
 
 const nav: NavItem[] = [
   { label: "Home", href: "/", icon: Home },
-  { label: "Notifications", href: "#", icon: Bell },
-  { label: "Discover", href: "#", icon: Compass },
+  { label: "Notifications", href: "/notifications", icon: Bell },
+  { label: "Discover", href: "/discover", icon: Compass },
   { label: "Buy DESO", href: "https://portview.xyz", external: true, icon: WalletCards },
-  { label: "Messages", href: "#", icon: Mail },
+  { label: "Messages", href: "/messages", icon: Mail },
   { label: "My Profile", dynamic: true, icon: User },
-  { label: "My Wallet", href: "#", icon: Wallet },
-  { label: "More", href: "#", icon: MoreHorizontal },
+  { label: "My Wallet", href: "/wallet", icon: Wallet },
+  { label: "More", href: "/more", icon: MoreHorizontal },
 ];
 
+function isActivePath(pathname: string, href: string) {
+  if (href === "/") return pathname === "/";
+  return pathname === href || pathname.startsWith(`${href}/`);
+}
+
 export function Sidebar() {
+  const pathname = usePathname();
   const { myProfileHref } = useAuth();
 
   return (
@@ -56,21 +63,28 @@ export function Sidebar() {
         {nav.map((item) => {
           const href = "href" in item ? item.href : myProfileHref;
           const Icon = item.icon;
-          const className =
-            "flex h-[52px] items-center gap-3 rounded-xl px-3 text-[17px] text-slate-100 transition hover:bg-slate-900";
+          const active =
+            item.label === "My Profile"
+              ? pathname === "/me" || pathname.startsWith("/profile/") || pathname === myProfileHref
+              : !item.external && isActivePath(pathname, href);
+
+          const className = [
+            "flex h-[52px] items-center gap-3 rounded-xl px-3 text-[17px] transition",
+            active ? "bg-slate-900 text-white" : "text-slate-100 hover:bg-slate-900",
+          ].join(" ");
 
           if (item.external) {
             return (
               <a key={item.label} href={href} target="_blank" rel="noreferrer" className={className}>
-                <Icon size={20} className="text-muted" />
+                <Icon size={20} className={active ? "text-white" : "text-muted"} />
                 <span>{item.label}</span>
               </a>
             );
           }
 
           return (
-            <Link key={item.label} href={href || "#"} className={className}>
-              <Icon size={20} className="text-muted" />
+            <Link key={item.label} href={href} className={className}>
+              <Icon size={20} className={active ? "text-white" : "text-muted"} />
               <span>{item.label}</span>
             </Link>
           );

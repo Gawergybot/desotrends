@@ -7,7 +7,9 @@ import { PostCard } from "@/components/post-card";
 import { RightRail } from "@/components/right-rail";
 import { Sidebar } from "@/components/sidebar";
 import { TopBar } from "@/components/topbar";
+import { VerifiedBadge } from "@/components/verified-badge";
 import { useAuth } from "@/hooks/useAuth";
+import { isCoreUsername } from "@/lib/core-accounts";
 import { getPostsForPublicKey, getProfile, getProfileByPublicKey } from "@/lib/deso";
 
 export default function ProfilePage({ params }: { params: Promise<{ username: string }> }) {
@@ -34,6 +36,9 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
     enabled: Boolean(publicKey),
   });
 
+  const headerUsername = profile.data?.Profile?.Username || username;
+  const showVerified = isCoreUsername(headerUsername);
+
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-[1600px]">
       <Sidebar />
@@ -48,7 +53,10 @@ export default function ProfilePage({ params }: { params: Promise<{ username: st
             {profile.isLoading && <p className="mt-4 text-sm text-muted">Loading profile…</p>}
             {profile.data?.Profile && (
               <header className="mt-4 border-b border-border pb-4">
-                <h1 className="text-2xl font-semibold">@{profile.data.Profile.Username || username}</h1>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-2xl font-semibold">@{headerUsername}</h1>
+                  {showVerified ? <VerifiedBadge size={18} /> : null}
+                </div>
                 <p className="mt-2 text-sm text-muted">{profile.data.Profile.Description || "No bio available."}</p>
               </header>
             )}

@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { resolveAuthUser } from "@/lib/deso";
+import { profilePicUrl, resolveAuthUser } from "@/lib/deso";
 import { getCurrentIdentityPublicKey, launchLogin, logoutIdentity } from "@/lib/identity";
 import { AuthUser } from "@/lib/types";
 
@@ -11,6 +11,8 @@ type AuthContextValue = {
   signIn: () => Promise<void>;
   signOut: () => Promise<void>;
   isHydrated: boolean;
+  isSigningIn: boolean;
+  authError: string | null;
 };
 
 const KEY = "desotrends-auth";
@@ -29,9 +31,18 @@ function readStoredUser(): AuthUser | null {
   }
 }
 
+function buildFallbackUser(publicKey: string): AuthUser {
+  return {
+    publicKey,
+    profilePic: profilePicUrl(publicKey),
+  };
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
-  const [isHydrated, setIsHydrated] = useState(false);
+  const [user, setUser] = useState<AuthUser | null>(() => readStoredUser());
+  const [isHydrated, setIsHydrated] = useState(typeof window !== "undefined");
+  const [isSigningIn, setIsSigningIn] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -39,26 +50,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const hydrateAuth = async () => {
       try {
         const identityKey = await getCurrentIdentityPublicKey();
-        if (identityKey) {
-          const hydrated = await resolveAuthUser(identityKey);
-          if (!cancelled) {
-            setUser(hydrated);
-            window.localStorage.setItem(KEY, JSON.stringify(hydrated));
-          }
+        if (!identityKey) {
+          if (!cancelled) setIsHydrated(true);
           return;
         }
-      } catch {
-        // fall back to localStorage when identity snapshot is unavailable
-      }
 
-      if (!cancelled) {
-        setUser(readStoredUser());
+        const fallback = buildFallbackUser(identityKey);
+        if (!cancelled) {
+          setUser(fallback);
+          window.localStorage.setItem(KEY, JSON.stringify(fallback));
+          setIsHydrated(true);
+        }
+
+        const hydrated = await resolveAuthUser(identityKey);
+        if (!cancelled) {
+          setUser(hydrated);
+          window.localStorage.setItem(KEY, JSON.stringify(hydrated));
+        }
+      } catch {
+        if (!cancelled) {
+          setIsHydrated(true);
+        }
       }
     };
 
-    void hydrateAuth().finally(() => {
-      if (!cancelled) setIsHydrated(true);
-    });
+    void hydrateAuth();
 
     return () => {
       cancelled = true;
@@ -66,10 +82,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signIn = async () => {
-    const publicKey = await launchLogin();
-    const hydrated = await resolveAuthUser(publicKey);
-    setUser(hydrated);
-    window.localStorage.setItem(KEY, JSON.stringify(hydrated));
+    setIsSigningIn(true);
+    setAuthError(null);
+
+    try {
+      const publicKey = await launchLogin();
+
+      const fallback = buildFallbackUser(publicKey);
+      setUser(fallback);
+      window.localStorage.setItem(KEY, JSON.stringify(fallback));
+      setIsHydrated(true);
+
+      const hydrated = await resolveAuthUser(publicKey);
+      setUser(hydrated);
+      window.localStorage.setItem(KEY, JSON.stringify(hydrated));
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unable to sign in with DeSo right now.";
+      setAuthError(message);
+    } finally {
+      setIsSigningIn(false);
+    }
   };
 
   const signOut = async () => {
@@ -77,12 +109,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await logoutIdentity();
     } finally {
       setUser(null);
-      window.localStorage.removeItem(KEY);
+      setAuthError(null);
+      setIsSigningIn(false);
+      if (typeof window !== "undefined") {
+        window.localStorage.removeItem(KEY);
+      }
     }
   };
 
   const myProfileHref = user?.username ? `/profile/${user.username}` : "/me";
-  const value = useMemo(() => ({ user, myProfileHref, signIn, signOut, isHydrated }), [isHydrated, myProfileHref, user]);
+
+  const value = useMemo(
+    () => ({ user, myProfileHref, signIn, signOut, isHydrated, isSigningIn, authError }),
+    [authError, isHydrated, isSigningIn, myProfileHref, user],
+  );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

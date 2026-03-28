@@ -1,19 +1,36 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { getGlobalFeed, submitPost } from "@/lib/deso";
+import { getGlobalFeed, getTrendingPostPool, submitPost } from "@/lib/deso";
+import { filterCorePosts } from "@/lib/core-accounts";
 import { signTransaction, submitSignedTransaction } from "@/lib/identity";
 
-export function useFeed() {
+export type FeedMode = "following" | "hot" | "core";
+
+async function getFeedForMode(mode: FeedMode) {
+  if (mode === "following") {
+    return [];
+  }
+
+  if (mode === "core") {
+    const pool = await getTrendingPostPool();
+    return filterCorePosts(pool).slice(0, 50);
+  }
+
+  return getGlobalFeed(50);
+}
+
+export function useFeed(mode: FeedMode = "hot") {
   return useQuery({
-    queryKey: ["feed"],
-    queryFn: () => getGlobalFeed(50),
-    staleTime: 30_000,
+    queryKey: ["feed", mode],
+    queryFn: () => getFeedForMode(mode),
+    staleTime: mode === "hot" ? 30_000 : 60_000,
   });
 }
 
 export function useCreatePost() {
   const qc = useQueryClient();
+
   return useMutation({
     mutationFn: ({ publicKey, body }: { publicKey: string; body: string }) =>
       submitPost(publicKey, body, signTransaction, submitSignedTransaction),
