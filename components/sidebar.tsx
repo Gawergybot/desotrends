@@ -54,8 +54,7 @@ export function Sidebar() {
 
       <nav className="space-y-1">
         {nav.map((item) => {
-          const isDynamic = "dynamic" in item && item.dynamic;
-          const href = isDynamic ? myProfileHref : item.href;
+          const href = "href" in item ? item.href : myProfileHref;
           const Icon = item.icon;
           const className =
             "flex h-[52px] items-center gap-3 rounded-xl px-3 text-[17px] text-slate-100 transition hover:bg-slate-900";
