@@ -85,17 +85,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsSigningIn(true);
     setAuthError(null);
 
+    let publicKey: string | null = null;
+
     try {
-      const publicKey = await launchLogin();
+      publicKey = await launchLogin();
 
       const fallback = buildFallbackUser(publicKey);
       setUser(fallback);
       window.localStorage.setItem(KEY, JSON.stringify(fallback));
       setIsHydrated(true);
 
-      const hydrated = await resolveAuthUser(publicKey);
-      setUser(hydrated);
-      window.localStorage.setItem(KEY, JSON.stringify(hydrated));
+      try {
+        const hydrated = await resolveAuthUser(publicKey);
+        setUser(hydrated);
+        window.localStorage.setItem(KEY, JSON.stringify(hydrated));
+      } catch {
+        // Keep fallback signed-in state if enrichment fails.
+      }
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unable to sign in with DeSo right now.";
       setAuthError(message);

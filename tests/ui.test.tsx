@@ -138,3 +138,39 @@ test("Top and Latest tabs switch", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Latest" }));
   expect(await screen.findByText("latest")).toBeInTheDocument();
 });
+
+
+test("post card renders avatar image when profilePicUrl exists", () => {
+  const post = {
+    PostHashHex: "avatar-post",
+    Body: "with avatar",
+    TimestampNanos: Date.now() * 1e6,
+    PosterPublicKeyBase58Check: "BC1YLavatar",
+    ProfileEntryResponse: { Username: "deso" },
+  };
+
+  render(<PostCard post={post} />);
+  expect(screen.getByAltText("deso")).toBeInTheDocument();
+});
+
+test("verified badge only spins cloud background", () => {
+  const post = {
+    PostHashHex: "core-post-spin",
+    Body: "core team update",
+    TimestampNanos: Date.now() * 1e6,
+    PosterPublicKeyBase58Check: "pk-core",
+    ProfileEntryResponse: { Username: "deso" },
+  };
+
+  const { container } = render(<PostCard post={post} />);
+  const badge = screen.getByLabelText("Verified core team account");
+  expect(badge.className).toContain("relative inline-flex");
+
+  const svgs = container.querySelectorAll('svg');
+  const spinningCloud = Array.from(svgs).find((svg) => svg.classList.contains("animate-spin"));
+  expect(spinningCloud).toBeTruthy();
+
+  const checkSvg = Array.from(svgs).find((svg) => svg.classList.contains("z-[1]"));
+  expect(checkSvg).toBeTruthy();
+  expect(checkSvg?.classList.contains("animate-spin")).toBe(false);
+});
